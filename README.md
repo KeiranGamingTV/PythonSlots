@@ -3,6 +3,7 @@ Ever wanted to experience a simple slot machine from home, but don't want to spe
 
 # DISCLAIMER
 ***<ins>NO</ins>*** real money is used, and ***<ins>NO</ins>*** real money is earned! This is completely for **<ins>ENTERTAINMENT PURPOSES ONLY!</ins>**
+
 If you *really* insist on using real money, either use a real service, or open an issue. I will only create a paid service if there is enough demand.
 
 # Features
