@@ -24,38 +24,41 @@ PAYOUT_MULTIPLIERS = {
 
 WINDOW_HEIGHT = 7
 SAVE_FILE = "slots_data.json"
-CONTENT_WIDTH = 52  
+CONTENT_WIDTH = 52
 CELL_WIDTH = 16
+
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+
 def load_data():
     today = datetime.now().strftime("%Y-%m-%d")
     default = {
-        "spent": 0, "profit": 0, "high_score": 0, "streak": 0, 
-        "level": 1, "xp": 0, 
-        "challenge_type": "LEMON", 
-        "challenge_goal": 5, 
+        "spent": 0, "profit": 0, "high_score": 0, "streak": 0,
+        "level": 1, "xp": 0,
+        "challenge_type": "LEMON",
+        "challenge_goal": 5,
         "challenge_progress": 0,
         "challenge_completed": False,
         "last_date": today
     }
-    
-    if not os.path.exists(SAVE_FILE): 
+
+    if not os.path.exists(SAVE_FILE):
         return default
     try:
         with open(SAVE_FILE, 'r') as f:
             data = json.load(f)
             # Ensure all keys exist
             for key, val in default.items():
-                if key not in data: data[key] = val
-            
+                if key not in data:
+                    data[key] = val
+
             # Legacy conversion: if someone has "earned", convert it to profit
             if "earned" in data:
                 data["profit"] = data["earned"] - data["spent"]
                 del data["earned"]
-            
+
             # Daily Reset Logic
             if data["last_date"] != today:
                 data["last_date"] = today
@@ -63,10 +66,11 @@ def load_data():
                 data["challenge_goal"] = random.randint(5, 15)
                 data["challenge_progress"] = 0
                 data["challenge_completed"] = False
-            
+
             return data
-    except: 
+    except Exception:
         return default
+
 
 def save_data(stats):
     if stats["profit"] > stats["high_score"]:
@@ -74,10 +78,13 @@ def save_data(stats):
     try:
         with open(SAVE_FILE, 'w') as f:
             json.dump(stats, f, indent=4)
-    except: pass
+    except Exception:
+        pass
+
 
 def get_xp_for_next_level(level):
     return int(100 * (level ** 1.5))
+
 
 def level_up_animation(new_level):
     for _ in range(3):
@@ -93,6 +100,7 @@ def level_up_animation(new_level):
         time.sleep(0.2)
     input("\nPress ENTER to claim your reward and continue...")
 
+
 def add_xp(stats, amount):
     stats["xp"] += amount
     needed = get_xp_for_next_level(stats["level"])
@@ -102,39 +110,42 @@ def add_xp(stats, amount):
         level_up_animation(stats["level"])
         needed = get_xp_for_next_level(stats["level"])
 
+
 def get_classic_cell(key, is_win_row):
     symbol = SYMBOLS[key]
     raw_text = f"> {symbol} <" if is_win_row else f"  {symbol}  "
     return f"{raw_text:^{CELL_WIDTH}}"
 
+
 def draw_machine(reels, stats, message=""):
     clear_screen()
     full_width = CONTENT_WIDTH + 8
     print("=" * full_width)
-    
+
     # Header showing Profit instead of Earned
     header = f"BEST: ${stats['high_score']} | SPENT: ${stats['spent']} | PROFIT: ${stats['profit']}"
     print(f"|| {header:^{CONTENT_WIDTH + 2}} ||")
-    
+
     xp_needed = get_xp_for_next_level(stats['level'])
     bar_width = 15
     filled = int((stats['xp'] / xp_needed) * bar_width)
     xp_bar = "[" + "=" * filled + "-" * (bar_width - filled) + "]"
     level_info = f"LVL {stats['level']} {xp_bar} XP: {stats['xp']}/{xp_needed}"
     print(f"|| {level_info:^{CONTENT_WIDTH + 2}} ||")
-    
+
     if stats["challenge_completed"]:
-        chal_info = f"DAILY CHALLENGE: COMPLETED! (Check back tomorrow)"
+        chal_info = "DAILY CHALLENGE: COMPLETED! (Check back tomorrow)"
     else:
-        chal_info = f"DAILY CHALLENGE: Land {stats['challenge_goal']} {stats['challenge_type']}s ({stats['challenge_progress']}/{stats['challenge_goal']})"
+        chal_info = (f"DAILY CHALLENGE: Land {stats['challenge_goal']} {stats['challenge_type']}s "
+                     f"({stats['challenge_progress']}/{stats['challenge_goal']})")
     print(f"|| {chal_info:^{CONTENT_WIDTH + 2}} ||")
-    
+
     s_mult = max(1, stats['streak'] - 1) if stats['streak'] > 2 else 1
     l_bonus = 1.0 + (stats['level'] - 1) * 0.1
     mult_info = f"STREAK: {stats['streak']} | MULT: x{s_mult} | LVL BONUS: x{l_bonus:.1f}"
     print(f"|| {mult_info:^{CONTENT_WIDTH + 2}} ||")
     print("=" * full_width)
-    
+
     center_idx = WINDOW_HEIGHT // 2
     spacer = f"|| {' ' * CELL_WIDTH} | {' ' * CELL_WIDTH} | {' ' * CELL_WIDTH} ||"
     for row_idx in range(WINDOW_HEIGHT):
@@ -149,18 +160,22 @@ def draw_machine(reels, stats, message=""):
     print("=" * full_width)
     print(f"  {message}")
 
+
 def spin_animation(current_reels, stats):
-    stops = [20, 45, 75] 
+    stops = [20, 45, 75]
     spinning = [True, True, True]
     ticks = 0
     while any(spinning):
         ticks += 1
         for i in range(3):
-            if ticks > stops[i]: spinning[i] = False
-            if spinning[i]: current_reels[i] += 1
+            if ticks > stops[i]:
+                spinning[i] = False
+            if spinning[i]:
+                current_reels[i] += 1
         draw_machine(current_reels, stats, "SPINNING...")
         time.sleep(0.05)
     return current_reels
+
 
 def main():
     stats = load_data()
@@ -169,40 +184,47 @@ def main():
 
     while True:
         draw_machine(current_reels, stats, last_msg)
-        print(f"\nENTER: Spin $1 | # : Bet | reset: Reset | q: Quit")
+        print("\nENTER: Spin $1 | # : Bet | reset: Reset | q: Quit")
         user_input = input("> ").strip().lower()
-        
-        if user_input == 'q': break
+
+        if user_input == 'q':
+            break
         if user_input == 'reset':
             today = datetime.now().strftime("%Y-%m-%d")
-            stats = {"spent": 0, "profit": 0, "high_score": 0, "streak": 0, "level": 1, "xp": 0, "challenge_type": "LEMON", "challenge_goal": 5, "challenge_progress": 0, "challenge_completed": False, "last_date": today}
-            save_data(stats); continue
-            
+            stats = {
+                "spent": 0, "profit": 0, "high_score": 0, "streak": 0,
+                "level": 1, "xp": 0, "challenge_type": "LEMON",
+                "challenge_goal": 5, "challenge_progress": 0,
+                "challenge_completed": False, "last_date": today
+            }
+            save_data(stats)
+            continue
+
         bet = int(user_input) if user_input.isdigit() else 1
-        
+
         # LOGIC CHANGE: Deduct bet from Profit immediately
         stats["spent"] += bet
-        stats["profit"] -= bet 
-        
+        stats["profit"] -= bet
+
         current_reels = spin_animation(current_reels, stats)
         keys = [ITEM_KEYS[current_reels[i] % len(ITEM_KEYS)] for i in range(3)]
-        
+
         if not stats["challenge_completed"]:
             for k in keys:
-                if k == stats["challenge_type"]: 
+                if k == stats["challenge_type"]:
                     stats["challenge_progress"] += 1
-        
+
         win_amount = 0
         s_mult = max(1, stats["streak"] - 1) if stats["streak"] > 2 else 1
         l_mult = 1.0 + (stats["level"] - 1) * 0.1
-        
+
         # Win Condition Logic
         if keys[0] == keys[1] == keys[2]:
             stats["streak"] += 1
             win_amount = int((bet * PAYOUT_MULTIPLIERS[keys[0]]) * s_mult * l_mult)
             last_msg = f"JACKPOT! {keys[0]} Won ${win_amount}"
             # BUG FIX: Only add XP on win
-            add_xp(stats, bet * 50) 
+            add_xp(stats, bet * 50)
         elif keys[0] == keys[1] or keys[1] == keys[2] or keys[0] == keys[2]:
             stats["streak"] += 1
             win_amount = int((bet * 2) * s_mult * l_mult)
@@ -210,18 +232,20 @@ def main():
             # BUG FIX: Only add XP on win
             add_xp(stats, bet * 20)
         else:
-            stats["streak"] = 0 
+            stats["streak"] = 0
             last_msg = "No luck. Spin again!"
-            
+
         if not stats["challenge_completed"] and stats["challenge_progress"] >= stats["challenge_goal"]:
             stats["challenge_completed"] = True
             bonus_xp = stats["level"] * 500
             add_xp(stats, bonus_xp)
             last_msg += f" | DAILY CHALLENGE DONE! +{bonus_xp} XP"
-            
+
         # Add winnings back to Profit
         stats["profit"] += win_amount
         save_data(stats)
 
+
 if __name__ == "__main__":
     main()
+    
